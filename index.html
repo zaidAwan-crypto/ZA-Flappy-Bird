@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZA Flappy Bird Final Edition</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #111;
+            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin: 5px 0;
+            font-size: 1.6rem;
+            color: #ffcc00;
+            text-shadow: 2px 2px #000;
+            letter-spacing: 2px;
+        }
+
+        #scoreBoard {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+            background: #333;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 2px solid #555;
+        }
+
+        /* 🎮 Game Container to handle relative UI position */
+        #gameContainer {
+            position: relative;
+            width: 320px;
+            height: 480px;
+        }
+
+        canvas {
+            border: 4px solid #fff;
+            border-radius: 12px;
+            box-shadow: 0px 15px 35px rgba(0,0,0,0.7);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* 🔴 UI Overlay for Custom Game Over Screen */
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 480px;
+            background: rgba(0, 0, 0, 0.65);
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        #gameOverTitle {
+            color: #ffcc00;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            text-shadow: 2px 2px 5px #000;
+        }
+
+        /* 🟢 Custom Play Again Button */
+        #restartBtn {
+            background-color: #28a745;
+            color: white;
+            border: 3px solid #1e7e34;
+            border-radius: 30px;
+            padding: 12px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.4);
+            transition: transform 0.1s;
+        }
+
+        #restartBtn:active {
+            transform: scale(0.95);
+        }
+
+        /* ↺ Red Try Again Logo (Rotated Arrow) */
+        #restartIcon {
+            color: #ff3333;
+            font-size: 22px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        /* 🔵 Neon Blue Score Display */
+        #finalScoreDisplay {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #00d2ff;
+            text-shadow: 0px 0px 8px rgba(0,210,255,0.6);
+            background: rgba(0,0,0,0.4);
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+
+        .instructions {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ZA FLAPPY BIRD</h1>
+    <div id="scoreBoard">Score: <span id="score">0</span></div>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="320" height="480"></canvas>
+        
+        <!-- 🎯 Naya Shandaar Game Over UI Screen -->
+        <div id="gameOverScreen">
+            <div id="gameOverTitle">GAME OVER</div>
+            <button id="restartBtn">
+                Play Again <span id="restartIcon">↺</span>
+            </button>
+            <div id="finalScoreDisplay">Score: <span id="currentRunScore">0</span></div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        Mobile par **Touch** karein ya Computer par **Spacebar** dabayein!<br>
+        *(Final layout with customized UI buttons)*
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreEl = document.getElementById("score");
+        
+        // Custom UI Elements
+        const gameOverScreen = document.getElementById("gameOverScreen");
+        const restartBtn = document.getElementById("restartBtn");
+        const currentRunScore = document.getElementById("currentRunScore");
+
+        let score = 0;
+        let gameOver = false;
+        let frameCount = 0;
+
+        let audioCtx = null;
+        let musicInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // 🎵 Background Music
+        function startBackgroundMusic() {
+            initAudio();
+            if (musicInterval) return;
+
+            let melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+            let noteStep = 0;
+
+            musicInterval = setInterval(() => {
+                if (gameOver) return;
+                
+                try {
+                    let osc = audioCtx.createOscillator();
+                    let gainNode = audioCtx.createGain();
+
+                    osc.type = 'triangle'; 
+                    osc.frequency.setValueAtTime(melody[noteStep], audioCtx.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); 
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+
+                    noteStep = (noteStep + 1) % melody.length;
+                } catch(e) {}
+            }, 200); 
+        }
+
+        function stopBackgroundMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+        }
+
+        // 🔊 Out Hone Ki Soft Pop Sound
+        function playCrashSound() {
+            try {
+                initAudio();
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.25);
+                
+                gain.gain.setValueAtTime(0.55, audioCtx.currentTime); 
+                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            } catch(e) {}
+        }
+
+        // Bird Logic
+        const bird = {
+            x: 60,
+            y: 150,
+            radius: 14,
+            gravity: 0.5,
+            jump: -6.5,
+            velocity: 0
+        };
+
+        // Pipes Logic
+        let pipes = [];
+        const pipeWidth = 46;
+        const pipeGap = 115; 
+        const pipeSpeed = 2;
+
+        // 🌳 Trees Scenery
+        let bgTrees = [];
+        const treeSpeed = 0.5;
+
+        function generateTrees() {
+            for (let i = 0; i < canvas.width; i += 60) {
+                bgTrees.push({ x: i, height: Math.floor(Math.random() * 25) + 35, width: 30 });
+            }
+        }
+        generateTrees();
+
+        function handleBackgroundScenery() {
+            if (frameCount % 120 === 0) {
+                bgTrees.push({ x: canvas.width, height: Math.floor(Math.random() * 25) + 35, width: 30 });
+            }
+            for (let i = bgTrees.length - 1; i >= 0; i--) {
+                if (!gameOver) bgTrees[i].x -= treeSpeed;
+                ctx.fillStyle = "#8B4513";
+                ctx.fillRect(bgTrees[i].x + 12, canvas.height - 20 - bgTrees[i].height, 6, bgTrees[i].height);
+                ctx.fillStyle = "#2E8B57";
+                ctx.beginPath();
+                ctx.arc(bgTrees[i].x + 15, canvas.height - 20 - bgTrees[i].height, 18, 0, Math.PI * 2);
+                ctx.fill();
+                if (bgTrees[i].x + 40 < 0) { bgTrees.splice(i, 1); }
+            }
+        }
+
+        // Controls
+        function flap() {
+            if (gameOver) return; // UI button handling handles restart now
+            startBackgroundMusic(); 
+            bird.velocity = bird.jump;
+        }
+
+        document.addEventListener("keydown", (e) => { 
+            if (e.code === "Space") {
+                if(gameOver) { resetGame(); } else { flap(); }
+            } 
+        });
+        canvas.addEventListener("touchstart", (e) => { e.preventDefault(); flap(); });
+        canvas.addEventListener("mousedown", flap);
+        
+        // Button Event Listener
+        restartBtn.addEventListener("click", (e) => {
+            e.stopPropagation(); // Stops double trigger
+            resetGame();
+        });
+
+        function resetGame() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes = [];
+            score = 0;
+            scoreEl.innerText = score;
+            gameOver = false;
+            frameCount = 0;
+            bgTrees = [];
+            generateTrees();
+            gameOverScreen.style.display = "none"; // Hide custom menu
+            startBackgroundMusic();
+            loop();
+        }
+
+        // Custom Bird Art
+        function drawBird(x, y, r) {
+            ctx.fillStyle = "#f4b400";
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#b8860b"; ctx.lineWidth = 2; ctx.stroke();
+
+            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(x + 6, y - 4, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(x + 7, y - 4, 2, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = "#ff5722"; ctx.beginPath();
+            ctx.moveTo(x + r - 2, y - 2); ctx.lineTo(x + r + 8, y + 2); ctx.lineTo(x + r - 2, y + 6);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+
+            let wingOffset = Math.sin(frameCount * 0.3) * 2;
+            ctx.fillStyle = "#ff9800"; ctx.beginPath();
+            ctx.ellipse(x - 6, y + 2, 7, 5 + wingOffset, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+        }
+
+        // Main Loop
+        function loop() {
+            if (gameOver) return;
+
+            let skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, "#4a90e2"); skyGradient.addColorStop(0.6, "#70c5ce"); skyGradient.addColorStop(1, "#ffe3a0"); 
+            ctx.fillStyle = skyGradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            handleBackgroundScenery();
+
+            ctx.fillStyle = "#5c9e31"; ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+            ctx.fillStyle = "#9acd32"; ctx.fillRect(0, canvas.height - 23, canvas.width, 3);
+
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+            drawBird(bird.x, bird.y, bird.radius);
+
+            if (bird.y + bird.radius >= canvas.height - 23 || bird.y - bird.radius <= 0) { endGame(); }
+
+            if (frameCount % 95 === 0) {
+                let topPipeHeight = Math.floor(Math.random() * (canvas.height / 2.5)) + 40;
+                let bottomPipeHeight = canvas.height - topPipeHeight - pipeGap - 20;
+                pipes.push({ x: canvas.width, top: topPipeHeight, bottom: bottomPipeHeight, passed: false });
+            }
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= pipeSpeed;
+                ctx.fillStyle = "#73bf2e"; ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+                ctx.fillRect(pipes[i].x, canvas.height - pipes[i].bottom - 20, pipeWidth, pipes[i].bottom);
+                
+                ctx.strokeStyle = "#4d851c"; ctx.lineWidth = 2;
+                ctx.strokeRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+                ctx.strokeRect(pipes[i].x, canvas.height - pipes[i].bottom - 20, pipeWidth, pipes[i].bottom);
+
+                let closestX = Math.max(pipes[i].x, Math.min(bird.x, pipes[i].x + pipeWidth));
+                let closestYTop = Math.min(bird.y, pipes[i].top);
+                let distanceSquaredTop = ((bird.x - closestX)**2) + ((bird.y - closestYTop)**2);
+                let bottomPipeY = canvas.height - pipes[i].bottom - 20;
+                let closestYBottom = Math.max(bird.y, bottomPipeY);
+                let distanceSquaredBottom = ((bird.x - closestX)**2) + ((bird.y - closestYBottom)**2);
+
+                if (
+                    (bird.x > pipes[i].x && bird.x < pipes[i].x + pipeWidth && bird.y < pipes[i].top) ||
+                    (bird.x > pipes[i].x && bird.x < pipes[i].x + pipeWidth && bird.y > bottomPipeY) ||
+                    distanceSquaredTop < (bird.radius ** 2) || distanceSquaredBottom < (bird.radius ** 2)
+                ) { endGame(); }
+
+                if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
+                    score++; scoreEl.innerText = score; pipes[i].passed = true;
+                }
+                if (pipes[i].x + pipeWidth < 0) { pipes.splice(i, 1); }
+            }
+
+            frameCount++;
+            requestAnimationFrame(loop);
+        }
+
+        function endGame() {
+            gameOver = true;
+            stopBackgroundMusic(); 
+            playCrashSound();      
+            
+            // Score update aur modern menu ko display karna
+            currentRunScore.innerText = score;
+            gameOverScreen.style.display = "flex";
+        }
+
+        loop();
+    </script>
+</body>
+</html>
