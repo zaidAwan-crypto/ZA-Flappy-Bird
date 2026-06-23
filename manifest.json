@@ -7,8 +7,13 @@
   "theme_color": "#ffcc00",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/adarsh-shukla/flappy-bird-js/master/assets/bird.png",
+      "src": "https://i.postimg.cc/BbjXB9Bd/1782210644778.png",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/BbjXB9Bd/1782210644778.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
