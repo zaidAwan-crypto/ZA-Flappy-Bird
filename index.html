@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="google-site-verification" content="bz3MC-7O4Bn-v7FLyrhpGNN2FhjIdN8mk7-ka18KbcI" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZA Flappy Bird Final Edition</title>
+    <title>ZA Flappy Bird: Endless Loop Edition</title>
+    
+    <link rel="manifest" href="manifest.json">
+
     <style>
         body {
             margin: 0;
@@ -17,6 +20,7 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
+            user-select: none;
         }
 
         h1 {
@@ -27,24 +31,50 @@
             letter-spacing: 2px;
         }
 
-        #scoreBoard {
-            font-size: 1.3rem;
+        #uiHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 320px;
             margin-bottom: 10px;
-            font-weight: bold;
-            background: #333;
-            padding: 5px 15px;
-            border-radius: 20px;
-            border: 2px solid #555;
         }
 
-        /* 🎮 Game Container to handle relative UI position */
+        #backToMenuBtn {
+            font-size: 1.2rem;
+            background: #ff3333;
+            color: white;
+            border: 2px solid #b30000;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+
+        #scoreBoard {
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: #333;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 2px solid #555;
+            flex-grow: 1;
+            text-align: center;
+            margin-left: 10px;
+        }
+
         #gameContainer {
             position: relative;
             width: 320px;
             height: 480px;
         }
 
-        canvas {
+        canvas#gameCanvas {
             border: 4px solid #fff;
             border-radius: 12px;
             box-shadow: 0px 15px 35px rgba(0,0,0,0.7);
@@ -54,32 +84,147 @@
             z-index: 1;
         }
 
-        /* 🔴 UI Overlay for Custom Game Over Screen */
+        /* 🏠 Menu Screen Style */
+        #menuScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 480px;
+            background: linear-gradient(to bottom, #1a2a6c, #b21f1f, #fdbb2d);
+            border-radius: 12px;
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            border: 4px solid #fff;
+        }
+
+        #menuTitle {
+            font-size: 24px;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            margin-bottom: 15px;
+        }
+
+        .gridTitle {
+            font-size: 14px;
+            color: #ffcc00;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px #000;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        #birdGrid {
+            display: grid;
+            grid-template-columns: repeat(3, 92px);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .birdCard {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 8px 3px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .birdCard:hover, .birdCard.selected {
+            background: rgba(255, 255, 0, 0.35);
+            border-color: #ffcc00;
+            transform: scale(1.05);
+        }
+
+        .previewCanvas {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .birdCard span {
+            font-size: 11px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        /* 📊 Difficulty Container Setup */
+        #diffContainer {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .diffBtn {
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: 2px solid #555;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .diffBtn[data-diff="easy"]:hover, .diffBtn[data-diff="easy"].selected {
+            background: #28a745; border-color: #fff; box-shadow: 0 0 8px #28a745;
+        }
+        .diffBtn[data-diff="normal"]:hover, .diffBtn[data-diff="normal"].selected {
+            background: #007bff; border-color: #fff; box-shadow: 0 0 8px #007bff;
+        }
+        .diffBtn[data-diff="hard"]:hover, .diffBtn[data-diff="hard"].selected {
+            background: #dc3545; border-color: #fff; box-shadow: 0 0 8px #dc3545;
+        }
+
+        #playBtn {
+            background-color: #28a745;
+            color: white;
+            border: 3px solid #1e7e34;
+            border-radius: 30px;
+            padding: 10px 45px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.4);
+            z-index: 25;
+        }
+
+        /* 🔴 Game Over Overlay */
         #gameOverScreen {
             position: absolute;
             top: 0;
             left: 0;
             width: 320px;
             height: 480px;
-            background: rgba(0, 0, 0, 0.65);
+            background: rgba(0, 0, 0, 0.7);
             border-radius: 12px;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10;
+            z-index: 18;
         }
 
         #gameOverTitle {
-            color: #ffcc00;
+            color: #ff3333;
             font-size: 28px;
             font-weight: bold;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             text-shadow: 2px 2px 5px #000;
         }
 
-        /* 🟢 Custom Play Again Button */
-        #restartBtn {
+        #restartBtn, #nextStageBtn {
             background-color: #28a745;
             color: white;
             border: 3px solid #1e7e34;
@@ -88,42 +233,33 @@
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            display: flex;
+            margin: 5px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.4);
+            z-index: 22;
+        }
+
+        /* 🎉 Stage Complete Overlay */
+        #stageCompleteScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 480px;
+            background: rgba(0, 40, 80, 0.85);
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            box-shadow: 0px 5px 15px rgba(0,0,0,0.4);
-            transition: transform 0.1s;
+            z-index: 19;
         }
 
-        #restartBtn:active {
-            transform: scale(0.95);
-        }
-
-        /* ↺ Red Try Again Logo (Rotated Arrow) */
-        #restartIcon {
-            color: #ff3333;
-            font-size: 22px;
+        #stageCompleteTitle {
+            color: #ffcc00;
+            font-size: 24px;
             font-weight: bold;
-            display: inline-block;
-        }
-
-        /* 🔵 Neon Blue Score Display */
-        #finalScoreDisplay {
-            margin-top: 20px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #00d2ff;
-            text-shadow: 0px 0px 8px rgba(0,210,255,0.6);
-            background: rgba(0,0,0,0.4);
-            padding: 5px 15px;
-            border-radius: 10px;
-        }
-
-        .instructions {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #888;
+            text-shadow: 2px 2px 4px #000;
+            margin-bottom: 20px;
             text-align: center;
         }
     </style>
@@ -131,243 +267,498 @@
 <body>
 
     <h1>ZA FLAPPY BIRD</h1>
-    <div id="scoreBoard">Score: <span id="score">0</span></div>
+    
+    <div id="uiHeader">
+        <button id="backToMenuBtn" title="Wapis Menu">←</button>
+        <div id="scoreBoard">Stage: <span id="stageNum">1</span> | Score: <span id="score">0</span></div>
+    </div>
     
     <div id="gameContainer">
+        <div id="menuScreen">
+            <div id="menuTitle">ZA ARCADE</div>
+            
+            <div class="gridTitle">SELECT YOUR BIRD:</div>
+            <div id="birdGrid">
+                <div class="birdCard selected" data-bird="0"><canvas width="55" height="40" class="previewCanvas"></canvas><span>Sona</span></div>
+                <div class="birdCard" data-bird="1"><canvas width="55" height="40" class="previewCanvas"></canvas><span>Lal</span></div>
+                <div class="birdCard" data-bird="2"><canvas width="55" height="40" class="previewCanvas"></canvas><span>Neeli</span></div>
+                <div class="birdCard" data-bird="3"><canvas width="55" height="40" class="previewCanvas"></canvas><span>Hari</span></div>
+                <div class="birdCard" data-bird="4"><canvas width="55" height="40" class="previewCanvas"></canvas><span>Jami</span></div>
+                <div class="birdCard" data-bird="5"><canvas width="55" height="40" class="previewCanvas"></canvas><span>Ninja</span></div>
+            </div>
+
+            <!-- New Mode Selector Section -->
+            <div class="gridTitle">SELECT DIFFICULTY:</div>
+            <div id="diffContainer">
+                <button class="diffBtn" data-diff="easy">EASY</button>
+                <button class="diffBtn selected" data-diff="normal">NORMAL</button>
+                <button class="diffBtn" data-diff="hard">HARD</button>
+            </div>
+
+            <button id="playBtn">PLAY</button>
+        </div>
+
         <canvas id="gameCanvas" width="320" height="480"></canvas>
         
-        <!-- 🎯 Naya Shandaar Game Over UI Screen -->
         <div id="gameOverScreen">
             <div id="gameOverTitle">GAME OVER</div>
-            <button id="restartBtn">
-                Play Again <span id="restartIcon">↺</span>
-            </button>
-            <div id="finalScoreDisplay">Score: <span id="currentRunScore">0</span></div>
+            <button id="restartBtn">Play Again ↺</button>
+            <div style="margin-top:15px; color:#00d2ff; font-weight:bold;">Score: <span id="currentRunScore">0</span></div>
         </div>
-    </div>
 
-    <div class="instructions">
-        Mobile par **Touch** karein ya Computer par **Spacebar** dabayein!<br>
-        *(Final layout with customized UI buttons)*
+        <div id="stageCompleteScreen">
+            <div id="stageCompleteTitle">STAGE COMPLETE!</div>
+            <button id="nextStageBtn">Next Stage ➔</button>
+        </div>
     </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const scoreEl = document.getElementById("score");
+        const stageNumEl = document.getElementById("stageNum");
         
-        // Custom UI Elements
+        // Screens & Buttons
+        const menuScreen = document.getElementById("menuScreen");
         const gameOverScreen = document.getElementById("gameOverScreen");
+        const stageCompleteScreen = document.getElementById("stageCompleteScreen");
+        const stageCompleteTitle = document.getElementById("stageCompleteTitle");
+        const playBtn = document.getElementById("playBtn");
         const restartBtn = document.getElementById("restartBtn");
+        const nextStageBtn = document.getElementById("nextStageBtn");
+        const backToMenuBtn = document.getElementById("backToMenuBtn");
         const currentRunScore = document.getElementById("currentRunScore");
 
+        let selectedBirdIndex = 0;
+        let selectedDifficulty = "normal"; // Default selected difficulty
         let score = 0;
+        let currentStage = 1; 
         let gameOver = false;
+        let gameActive = false;
         let frameCount = 0;
+        let menuFrameCount = 0;
+        let menuAnimationId = null;
 
         let audioCtx = null;
         let musicInterval = null;
 
+        // Physics Settings
+        const bird = { x: 60, y: 150, radius: 14, gravity: 0.5, jump: -6.5, velocity: 0 };
+        let pipes = [];
+        const pipeWidth = 46;
+        let pipeGap = 115; // Dynamically altered by difficulty
+        const pipeSpeed = 2;
+
+        // Environment Scenery
+        let bgTrees = [];
+        const treeSpeed = 0.5;
+        let staticStars = [];
+        let snowflakes = [];
+
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         }
 
-        // 🎵 Background Music
         function startBackgroundMusic() {
             initAudio();
             if (musicInterval) return;
-
             let melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
             let noteStep = 0;
-
             musicInterval = setInterval(() => {
-                if (gameOver) return;
-                
+                if (gameOver || !gameActive) return;
                 try {
                     let osc = audioCtx.createOscillator();
                     let gainNode = audioCtx.createGain();
-
                     osc.type = 'triangle'; 
                     osc.frequency.setValueAtTime(melody[noteStep], audioCtx.currentTime);
-                    
-                    gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); 
+                    gainNode.gain.setValueAtTime(0.04, audioCtx.currentTime); 
                     gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-
-                    osc.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.2);
-
+                    osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
                     noteStep = (noteStep + 1) % melody.length;
                 } catch(e) {}
             }, 200); 
         }
 
         function stopBackgroundMusic() {
-            if (musicInterval) {
-                clearInterval(musicInterval);
-                musicInterval = null;
-            }
+            if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
         }
 
-        // 🔊 Out Hone Ki Soft Pop Sound
         function playCrashSound() {
             try {
                 initAudio();
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                
-                osc.type = 'sine'; 
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
                 osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.25);
-                
-                gain.gain.setValueAtTime(0.55, audioCtx.currentTime); 
-                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-                
+                gain.gain.setValueAtTime(0.55, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.25);
             } catch(e) {}
         }
 
-        // Bird Logic
-        const bird = {
-            x: 60,
-            y: 150,
-            radius: 14,
-            gravity: 0.5,
-            jump: -6.5,
-            velocity: 0
-        };
-
-        // Pipes Logic
-        let pipes = [];
-        const pipeWidth = 46;
-        const pipeGap = 115; 
-        const pipeSpeed = 2;
-
-        // 🌳 Trees Scenery
-        let bgTrees = [];
-        const treeSpeed = 0.5;
-
-        function generateTrees() {
-            for (let i = 0; i < canvas.width; i += 60) {
-                bgTrees.push({ x: i, height: Math.floor(Math.random() * 25) + 35, width: 30 });
+        function generateStars() {
+            staticStars = [];
+            for (let i = 0; i < 25; i++) {
+                staticStars.push({ x: Math.random() * canvas.width, y: Math.random() * (canvas.height - 150), size: Math.random() * 1.5 + 0.5 });
             }
         }
-        generateTrees();
+        function generateSnow() {
+            snowflakes = [];
+            for (let i = 0; i < 40; i++) {
+                snowflakes.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 2 + 1, d: Math.random() * 1 });
+            }
+        }
+        function generateTrees() {
+            bgTrees = [];
+            for (let i = 0; i < canvas.width; i += 90) {
+                bgTrees.push({ x: i, height: Math.floor(Math.random() * 40) + 85, width: 50 });
+            }
+        }
+        generateStars(); generateSnow(); generateTrees();
 
         function handleBackgroundScenery() {
-            if (frameCount % 120 === 0) {
-                bgTrees.push({ x: canvas.width, height: Math.floor(Math.random() * 25) + 35, width: 30 });
+            let activeLoopScore = score % 90;
+            let isNight = (activeLoopScore >= 15 && activeLoopScore < 30) || 
+                          (activeLoopScore >= 45 && activeLoopScore < 60) || 
+                          (activeLoopScore >= 75 && activeLoopScore < 90);
+
+            if (isNight) {
+                ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+                for (let star of staticStars) ctx.fillRect(star.x, star.y, star.size, star.size);
             }
+
+            if (currentStage === 2) {
+                ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+                for (let s of snowflakes) {
+                    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+                    if (!gameOver) {
+                        s.y += s.r * 0.4; s.x += Math.sin(s.d) * 0.2;
+                        if (s.y > canvas.height) { s.y = -10; s.x = Math.random() * canvas.width; }
+                    }
+                }
+            }
+
+            if (frameCount % 160 === 0) {
+                bgTrees.push({ x: canvas.width, height: Math.floor(Math.random() * 40) + 85, width: 50 });
+            }
+            
+            let trunkColor, leavesColor1, leavesColor2;
+            if (currentStage === 1) {
+                trunkColor = isNight ? "#2c1605" : "#5c2d16";
+                leavesColor1 = isNight ? "#0d2b1a" : "#1e6038";
+                leavesColor2 = isNight ? "#113b24" : "#2E8B57";
+            } else if (currentStage === 2) {
+                trunkColor = isNight ? "#1c2833" : "#3a4f5c";
+                leavesColor1 = isNight ? "#aec6cf" : "#d9e2ec"; 
+                leavesColor2 = isNight ? "#d5e1ed" : "#f0f4f8";
+            } else {
+                trunkColor = isNight ? "#2c1600" : "#4a2c00";
+                leavesColor1 = isNight ? "#555217" : "#827717"; 
+                leavesColor2 = isNight ? "#7c8221" : "#afb42b";
+            }
+
             for (let i = bgTrees.length - 1; i >= 0; i--) {
                 if (!gameOver) bgTrees[i].x -= treeSpeed;
-                ctx.fillStyle = "#8B4513";
-                ctx.fillRect(bgTrees[i].x + 12, canvas.height - 20 - bgTrees[i].height, 6, bgTrees[i].height);
-                ctx.fillStyle = "#2E8B57";
+                let tX = bgTrees[i].x; let tY = canvas.height - 20 - bgTrees[i].height;
+
+                ctx.fillStyle = trunkColor;
+                ctx.fillRect(tX + 22, tY, 7, bgTrees[i].height); 
+                
+                ctx.fillStyle = leavesColor1;
                 ctx.beginPath();
-                ctx.arc(bgTrees[i].x + 15, canvas.height - 20 - bgTrees[i].height, 18, 0, Math.PI * 2);
+                if (currentStage === 3) {
+                    ctx.arc(tX + 10, tY, 22, 0, Math.PI * 2); ctx.arc(tX + 40, tY, 22, 0, Math.PI * 2);
+                } else {
+                    ctx.arc(tX + 12, tY + 5, 28, 0, Math.PI * 2); ctx.arc(tX + 38, tY + 5, 28, 0, Math.PI * 2);
+                }
                 ctx.fill();
-                if (bgTrees[i].x + 40 < 0) { bgTrees.splice(i, 1); }
+
+                ctx.fillStyle = leavesColor2;
+                ctx.beginPath(); ctx.arc(tX + 25, tY - 12, currentStage === 3 ? 26 : 34, 0, Math.PI * 2); ctx.fill();
+                
+                if (tX + 70 < 0) { bgTrees.splice(i, 1); }
             }
         }
 
-        // Controls
-        function flap() {
-            if (gameOver) return; // UI button handling handles restart now
-            startBackgroundMusic(); 
-            bird.velocity = bird.jump;
+        function renderBirdVector(targetCtx, x, y, r, profileIndex, fCount) {
+            targetCtx.save();
+            targetCtx.translate(x, y);
+
+            let wingOffset = Math.sin(fCount * 0.3) * 2;
+
+            if (profileIndex === 0) {
+                targetCtx.fillStyle = "#f4b400"; targetCtx.beginPath(); targetCtx.arc(0, 0, r, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.strokeStyle = "#b8860b"; targetCtx.lineWidth = 2; targetCtx.stroke();
+                targetCtx.fillStyle = "white"; targetCtx.beginPath(); targetCtx.arc(6, -4, 5, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "black"; targetCtx.beginPath(); targetCtx.arc(7, -4, 2, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.fillStyle = "#ff5722"; targetCtx.beginPath(); targetCtx.moveTo(r-2, -2); targetCtx.lineTo(r+8, 2); targetCtx.lineTo(r-2, 6); targetCtx.closePath(); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "#ff9800"; targetCtx.beginPath(); targetCtx.ellipse(-6, 2, 7, 5 + wingOffset, Math.PI/4, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+
+            } else if (profileIndex === 1) {
+                targetCtx.fillStyle = "#ff3333"; targetCtx.beginPath(); targetCtx.moveTo(-5, -r); targetCtx.lineTo(-12, -r-8); targetCtx.lineTo(-2, -r-4); targetCtx.closePath(); targetCtx.fill();
+                targetCtx.fillStyle = "#ff3333"; targetCtx.beginPath(); targetCtx.arc(0, 0, r, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.strokeStyle = "#990000"; targetCtx.lineWidth = 2; targetCtx.stroke();
+                targetCtx.fillStyle = "white"; targetCtx.beginPath(); targetCtx.arc(5, -3, 5, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "black"; targetCtx.beginPath(); targetCtx.arc(6, -3, 2, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.strokeStyle = "black"; targetCtx.lineWidth = 2.5; targetCtx.beginPath(); targetCtx.moveTo(0, -8); targetCtx.lineTo(10, -5); targetCtx.stroke();
+                targetCtx.fillStyle = "#ffaa00"; targetCtx.beginPath(); targetCtx.moveTo(r-2, -1); targetCtx.lineTo(r+7, 2); targetCtx.lineTo(r-2, 5); targetCtx.closePath(); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "#ff6666"; targetCtx.beginPath(); targetCtx.ellipse(-6, 2, 6, 4 + wingOffset, 0, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+
+            } else if (profileIndex === 2) {
+                targetCtx.fillStyle = "#3399ff"; targetCtx.beginPath(); targetCtx.ellipse(0, 0, r+4, r+1, 0, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.strokeStyle = "#0044cc"; targetCtx.lineWidth = 2; targetCtx.stroke();
+                targetCtx.fillStyle = "white"; targetCtx.beginPath(); targetCtx.arc(9, -3, 4.5, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "black"; targetCtx.beginPath(); targetCtx.arc(10, -3, 1.8, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.fillStyle = "#ff5722"; targetCtx.beginPath(); targetCtx.moveTo(r+2, -1); targetCtx.lineTo(r+11, 2); targetCtx.lineTo(r+2, 5); targetCtx.closePath(); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "#66b2ff"; targetCtx.beginPath(); targetCtx.ellipse(-4, 2, 9, 7 + wingOffset, 0, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+
+            } else if (profileIndex === 3) {
+                targetCtx.fillStyle = "#1b5e20"; targetCtx.beginPath(); targetCtx.moveTo(-4, -r); targetCtx.lineTo(-4, -r-7); targetCtx.lineTo(0, -r+2); targetCtx.fill();
+                targetCtx.fillStyle = "#33cc33"; targetCtx.beginPath(); targetCtx.arc(0, 0, r, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.strokeStyle = "#006600"; targetCtx.lineWidth = 2; targetCtx.stroke();
+                targetCtx.fillStyle = "white"; targetCtx.beginPath(); targetCtx.arc(4, -2, 7, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "#ff3333"; targetCtx.beginPath(); targetCtx.arc(5, -2, 3, 0, Math.PI*2); targetCtx.fill(); 
+                targetCtx.fillStyle = "#ffffff"; targetCtx.beginPath(); targetCtx.moveTo(r-2, 1); targetCtx.lineTo(r+6, 4); targetCtx.lineTo(r-2, 7); targetCtx.closePath(); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "#66ff66"; targetCtx.beginPath(); targetCtx.ellipse(-6, 3, 6, 5 + wingOffset, Math.PI/2, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+
+            } else if (profileIndex === 4) {
+                targetCtx.fillStyle = "#b366ff"; targetCtx.beginPath(); targetCtx.arc(0, 0, r, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.strokeStyle = "#5500aa"; targetCtx.lineWidth = 2; targetCtx.stroke();
+                targetCtx.fillStyle = "white"; targetCtx.beginPath(); targetCtx.arc(6, -4, 4.5, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "black"; targetCtx.beginPath(); targetCtx.arc(7, -4, 1.8, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.fillStyle = "#ff4081"; targetCtx.beginPath(); targetCtx.moveTo(r-2, -2); targetCtx.lineTo(r+6, 1); targetCtx.lineTo(r-2, 4); targetCtx.closePath(); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.fillStyle = "#e040fb";
+                targetCtx.beginPath(); targetCtx.ellipse(-8, -2, 6, 11 + wingOffset, -Math.PI/6, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+                targetCtx.beginPath(); targetCtx.ellipse(-10, 6, 4, 7 + wingOffset, Math.PI/6, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+
+            } else if (profileIndex === 5) {
+                targetCtx.fillStyle = "#2c3e50"; targetCtx.beginPath(); targetCtx.arc(0, 0, r, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.strokeStyle = "#111111"; targetCtx.lineWidth = 2; targetCtx.stroke();
+                targetCtx.fillStyle = "#f5cba7"; targetCtx.beginPath(); targetCtx.ellipse(5, -2, 7, 4, 0, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.fillStyle = "white"; targetCtx.beginPath(); targetCtx.moveTo(1, -4); targetCtx.lineTo(8, -4); targetCtx.lineTo(6, -1); targetCtx.lineTo(2, -2); targetCtx.closePath(); targetCtx.fill();
+                targetCtx.fillStyle = "black"; targetCtx.beginPath(); targetCtx.arc(4, -3, 1.2, 0, Math.PI*2); targetCtx.fill();
+                targetCtx.fillStyle = "#111111"; targetCtx.beginPath(); targetCtx.moveTo(r-2, -1); targetCtx.lineTo(r+6, 2); targetCtx.lineTo(r-2, 5); targetCtx.closePath(); targetCtx.fill();
+                targetCtx.fillStyle = "#7f8c8d"; targetCtx.beginPath(); targetCtx.ellipse(-6, 2, 7, 4 + wingOffset, Math.PI/4, 0, Math.PI*2); targetCtx.fill(); targetCtx.stroke();
+            }
+
+            targetCtx.restore();
         }
 
-        document.addEventListener("keydown", (e) => { 
-            if (e.code === "Space") {
-                if(gameOver) { resetGame(); } else { flap(); }
-            } 
-        });
-        canvas.addEventListener("touchstart", (e) => { e.preventDefault(); flap(); });
+        function drawBird(x, y, r, profileIndex) {
+            renderBirdVector(ctx, x, y, r, profileIndex, frameCount);
+        }
+
+        function updateMenuPreviewsLoop() {
+            if (gameActive) return;
+            const preCanvases = document.querySelectorAll(".previewCanvas");
+            preCanvases.forEach((pC, idx) => {
+                let pCtx = pC.getContext("2d");
+                pCtx.clearRect(0,0,55,40);
+                
+                let hoverOffset = Math.sin(menuFrameCount * 0.15 + idx) * 2;
+                renderBirdVector(pCtx, 27, 20 + hoverOffset, 11, idx, menuFrameCount);
+            });
+            menuFrameCount++;
+            menuAnimationId = requestAnimationFrame(updateMenuPreviewsLoop);
+        }
+
+        function startMenuAnimation() {
+            if(menuAnimationId) cancelAnimationFrame(menuAnimationId);
+            updateMenuPreviewsLoop();
+        }
+
+        function flap(e) {
+            if (e) { e.preventDefault(); }
+            if (gameOver || !gameActive) return;
+            startBackgroundMusic(); bird.velocity = bird.jump;
+        }
+
+        document.addEventListener("keydown", (e) => { if (e.code === "Space") { flap(); } });
+        canvas.addEventListener("touchstart", flap, {passive: false});
         canvas.addEventListener("mousedown", flap);
-        
-        // Button Event Listener
-        restartBtn.addEventListener("click", (e) => {
-            e.stopPropagation(); // Stops double trigger
-            resetGame();
+
+        // Bird Selection Mechanism
+        document.querySelectorAll(".birdCard").forEach(card => {
+            card.addEventListener("click", (e) => {
+                document.querySelectorAll(".birdCard").forEach(c => c.classList.remove("selected"));
+                card.classList.add("selected");
+                selectedBirdIndex = parseInt(card.getAttribute("data-bird"));
+            });
         });
 
-        function resetGame() {
-            bird.y = 150;
-            bird.velocity = 0;
-            pipes = [];
-            score = 0;
-            scoreEl.innerText = score;
-            gameOver = false;
-            frameCount = 0;
-            bgTrees = [];
-            generateTrees();
-            gameOverScreen.style.display = "none"; // Hide custom menu
-            startBackgroundMusic();
+        // 📊 Difficulty Selection Mechanism
+        document.querySelectorAll(".diffBtn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".diffBtn").forEach(b => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                selectedDifficulty = btn.getAttribute("data-diff");
+            });
+        });
+
+        playBtn.addEventListener("click", (e) => { 
+            e.stopPropagation();
+            if(menuAnimationId) cancelAnimationFrame(menuAnimationId);
+            menuScreen.style.display = "none"; 
+            gameActive = true; 
+            resetGame(true); 
+        });
+        
+        restartBtn.addEventListener("click", () => { resetGame(false); });
+        
+        backToMenuBtn.addEventListener("click", () => {
+            stopBackgroundMusic(); gameActive = false; gameOver = false;
+            gameOverScreen.style.display = "none"; stageCompleteScreen.style.display = "none";
+            menuScreen.style.display = "flex"; startMenuAnimation();
+        });
+
+        nextStageBtn.addEventListener("click", () => {
+            stageCompleteScreen.style.display = "none"; gameOver = false;
+            pipes = []; bird.y = 150; bird.velocity = 0; frameCount = 0;
             loop();
+        });
+
+        function resetGame(fullReset) {
+            if(fullReset) { currentStage = 1; }
+            stageNumEl.innerText = currentStage;
+            bird.y = 150; bird.velocity = 0; pipes = [];
+            score = 0; scoreEl.innerText = score;
+            gameOver = false; frameCount = 0;
+
+            // Apply Engine Changes Based on Chosen Difficulty
+            if (selectedDifficulty === "easy") {
+                pipeGap = 135; // Wider gap for kids
+            } else if (selectedDifficulty === "hard") {
+                pipeGap = 100; // Tighter space for challenge
+            } else {
+                pipeGap = 115; // Balanced Normal Mode
+            }
+
+            generateTrees(); generateStars(); generateSnow();
+            gameOverScreen.style.display = "none"; stageCompleteScreen.style.display = "none";
+            startBackgroundMusic(); loop();
         }
 
-        // Custom Bird Art
-        function drawBird(x, y, r) {
-            ctx.fillStyle = "#f4b400";
-            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = "#b8860b"; ctx.lineWidth = 2; ctx.stroke();
-
-            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(x + 6, y - 4, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(x + 7, y - 4, 2, 0, Math.PI * 2); ctx.fill();
-
-            ctx.fillStyle = "#ff5722"; ctx.beginPath();
-            ctx.moveTo(x + r - 2, y - 2); ctx.lineTo(x + r + 8, y + 2); ctx.lineTo(x + r - 2, y + 6);
-            ctx.closePath(); ctx.fill(); ctx.stroke();
-
-            let wingOffset = Math.sin(frameCount * 0.3) * 2;
-            ctx.fillStyle = "#ff9800"; ctx.beginPath();
-            ctx.ellipse(x - 6, y + 2, 7, 5 + wingOffset, Math.PI / 4, 0, Math.PI * 2);
-            ctx.fill(); ctx.stroke();
-        }
-
-        // Main Loop
         function loop() {
-            if (gameOver) return;
+            if (gameOver || !gameActive) return;
 
-            let skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            skyGradient.addColorStop(0, "#4a90e2"); skyGradient.addColorStop(0.6, "#70c5ce"); skyGradient.addColorStop(1, "#ffe3a0"); 
-            ctx.fillStyle = skyGradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            let activeLoopScore = score % 90;
+            if (activeLoopScore < 30) {
+                currentStage = 1;
+            } else if (activeLoopScore >= 30 && activeLoopScore < 60) {
+                currentStage = 2;
+            } else {
+                currentStage = 3;
+            }
+            stageNumEl.innerText = currentStage;
+
+            let isNight = (activeLoopScore >= 15 && activeLoopScore < 30) || 
+                          (activeLoopScore >= 45 && activeLoopScore < 60) || 
+                          (activeLoopScore >= 75 && activeLoopScore < 90);
+
+            if (currentStage === 1) {
+                let skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                if (isNight) {
+                    skyGradient.addColorStop(0, "#030712"); skyGradient.addColorStop(0.7, "#0b132b"); skyGradient.addColorStop(1, "#1c2541"); 
+                } else {
+                    skyGradient.addColorStop(0, "#4a90e2"); skyGradient.addColorStop(0.6, "#70c5ce"); skyGradient.addColorStop(1, "#ffe3a0"); 
+                }
+                ctx.fillStyle = skyGradient;
+            } else if (currentStage === 2) {
+                let snowGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                if (isNight) {
+                    snowGradient.addColorStop(0, "#091426"); snowGradient.addColorStop(0.8, "#1a2a44"); snowGradient.addColorStop(1, "#2c3e50");
+                } else {
+                    snowGradient.addColorStop(0, "#74ebd5"); snowGradient.addColorStop(1, "#acb6e5");
+                }
+                ctx.fillStyle = snowGradient;
+            } else {
+                let desertGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                if (isNight) {
+                    desertGradient.addColorStop(0, "#110602"); desertGradient.addColorStop(0.7, "#2c1105"); desertGradient.addColorStop(1, "#4a1c02");
+                } else {
+                    desertGradient.addColorStop(0, "#f46b45"); desertGradient.addColorStop(1, "#eea849");
+                }
+                ctx.fillStyle = desertGradient;
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             handleBackgroundScenery();
 
-            ctx.fillStyle = "#5c9e31"; ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
-            ctx.fillStyle = "#9acd32"; ctx.fillRect(0, canvas.height - 23, canvas.width, 3);
+            if (currentStage === 1) {
+                ctx.fillStyle = isNight ? "#224013" : "#5c9e31";
+            } else if (currentStage === 2) {
+                ctx.fillStyle = isNight ? "#b0c4de" : "#e6eff6"; 
+            } else {
+                ctx.fillStyle = isNight ? "#8b7355" : "#d2b48c"; 
+            }
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+            
+            ctx.fillStyle = currentStage === 2 ? "#ffffff" : (currentStage === 3 ? (isNight ? "#6e5a42" : "#c2a47c") : (isNight ? "#386322" : "#9acd32"));
+            ctx.fillRect(0, canvas.height - 23, canvas.width, 3);
 
-            bird.velocity += bird.gravity;
-            bird.y += bird.velocity;
-            drawBird(bird.x, bird.y, bird.radius);
+            bird.velocity += bird.gravity; bird.y += bird.velocity;
+            drawBird(bird.x, bird.y, bird.radius, selectedBirdIndex);
 
-            if (bird.y + bird.radius >= canvas.height - 23 || bird.y - bird.radius <= 0) { endGame(); }
+            if (bird.y + bird.radius >= canvas.height - 23 || bird.y - bird.radius <= 0) { endGame(); return; }
 
             if (frameCount % 95 === 0) {
-                let topPipeHeight = Math.floor(Math.random() * (canvas.height / 2.5)) + 40;
+                let minHeight, maxHeight;
+                
+                // 🛠️ DYNAMIC PIPE GENERATION SYSTEM
+                if (selectedDifficulty === "easy") {
+                    // Pipes are very uniform, centered, and restricted from going too high/low
+                    minHeight = 100;
+                    maxHeight = canvas.height - pipeGap - 140; 
+                } else if (selectedDifficulty === "hard") {
+                    // Maximum extreme movement allowed
+                    minHeight = 30; 
+                    maxHeight = canvas.height - pipeGap - 45; 
+                } else {
+                    // Balanced Normal Mode parameters
+                    minHeight = 40; 
+                    maxHeight = canvas.height - pipeGap - 60; 
+                }
+
+                let topPipeHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
                 let bottomPipeHeight = canvas.height - topPipeHeight - pipeGap - 20;
+                
                 pipes.push({ x: canvas.width, top: topPipeHeight, bottom: bottomPipeHeight, passed: false });
             }
 
             for (let i = pipes.length - 1; i >= 0; i--) {
                 pipes[i].x -= pipeSpeed;
-                ctx.fillStyle = "#73bf2e"; ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
-                ctx.fillRect(pipes[i].x, canvas.height - pipes[i].bottom - 20, pipeWidth, pipes[i].bottom);
                 
-                ctx.strokeStyle = "#4d851c"; ctx.lineWidth = 2;
-                ctx.strokeRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
-                ctx.strokeRect(pipes[i].x, canvas.height - pipes[i].bottom - 20, pipeWidth, pipes[i].bottom);
+                let pBaseColor, pGlowColor, pBorderColor;
+                if(currentStage === 1) {
+                    pBaseColor = isNight ? "#3a3d40" : "#7f8c8d";
+                    pGlowColor = isNight ? "#181a1b" : "#43484d";
+                    pBorderColor = "#111";
+                } else if(currentStage === 2) {
+                    pBaseColor = isNight ? "#4682b4" : "#90caf9"; 
+                    pGlowColor = isNight ? "#0b2240" : "#1565c0"; 
+                    pBorderColor = isNight ? "#90caf9" : "#ffffff";
+                } else {
+                    pBaseColor = isNight ? "#873600" : "#ca6f1e"; 
+                    pGlowColor = isNight ? "#3e1900" : "#873600"; 
+                    pBorderColor = isNight ? "#ca6f1e" : "#4a2306";
+                }
+
+                let pipeGradTop = ctx.createLinearGradient(pipes[i].x, 0, pipes[i].x + pipeWidth, 0);
+                pipeGradTop.addColorStop(0, pBaseColor); pipeGradTop.addColorStop(0.4, "#ffffff"); pipeGradTop.addColorStop(1, pGlowColor);
+                ctx.fillStyle = pipeGradTop; ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+                ctx.strokeStyle = pBorderColor; ctx.lineWidth = 2; ctx.strokeRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+                ctx.fillRect(pipes[i].x - 3, pipes[i].top - 16, pipeWidth + 6, 16); ctx.strokeRect(pipes[i].x - 3, pipes[i].top - 16, pipeWidth + 6, 16);
+
+                let bottomPipeY = canvas.height - pipes[i].bottom - 20;
+                let pipeGradBottom = ctx.createLinearGradient(pipes[i].x, bottomPipeY, pipes[i].x + pipeWidth, bottomPipeY);
+                pipeGradBottom.addColorStop(0, pBaseColor); pipeGradBottom.addColorStop(0.4, "#ffffff"); pipeGradBottom.addColorStop(1, pGlowColor);
+                ctx.fillStyle = pipeGradBottom; ctx.fillRect(pipes[i].x, bottomPipeY, pipeWidth, pipes[i].bottom);
+                ctx.strokeRect(pipes[i].x, bottomPipeY, pipeWidth, pipes[i].bottom);
+                ctx.fillRect(pipes[i].x - 3, bottomPipeY, pipeWidth + 6, 16); ctx.strokeRect(pipes[i].x - 3, bottomPipeY, pipeWidth + 6, 16);
 
                 let closestX = Math.max(pipes[i].x, Math.min(bird.x, pipes[i].x + pipeWidth));
                 let closestYTop = Math.min(bird.y, pipes[i].top);
                 let distanceSquaredTop = ((bird.x - closestX)**2) + ((bird.y - closestYTop)**2);
-                let bottomPipeY = canvas.height - pipes[i].bottom - 20;
                 let closestYBottom = Math.max(bird.y, bottomPipeY);
                 let distanceSquaredBottom = ((bird.x - closestX)**2) + ((bird.y - closestYBottom)**2);
 
@@ -375,12 +766,20 @@
                     (bird.x > pipes[i].x && bird.x < pipes[i].x + pipeWidth && bird.y < pipes[i].top) ||
                     (bird.x > pipes[i].x && bird.x < pipes[i].x + pipeWidth && bird.y > bottomPipeY) ||
                     distanceSquaredTop < (bird.radius ** 2) || distanceSquaredBottom < (bird.radius ** 2)
-                ) { endGame(); }
+                ) { endGame(); return; }
 
                 if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
                     score++; scoreEl.innerText = score; pipes[i].passed = true;
+                    
+                    if (score === 30) {
+                        stopBackgroundMusic(); stageCompleteTitle.innerText = "STAGE 1 COMPLETE!"; stageCompleteScreen.style.display = "flex"; return;
+                    } else if (score === 60) {
+                        stopBackgroundMusic(); stageCompleteTitle.innerText = "STAGE 2 COMPLETE!"; stageCompleteScreen.style.display = "flex"; return;
+                    } else if (score === 90) {
+                        stopBackgroundMusic(); stageCompleteTitle.innerText = "LOOP HIT: STAGE 3 CLEAR!"; stageCompleteScreen.style.display = "flex"; return;
+                    }
                 }
-                if (pipes[i].x + pipeWidth < 0) { pipes.splice(i, 1); }
+                if (pipes[i].x + pipeWidth < 0) pipes.splice(i, 1);
             }
 
             frameCount++;
@@ -388,16 +787,19 @@
         }
 
         function endGame() {
-            gameOver = true;
-            stopBackgroundMusic(); 
-            playCrashSound();      
-            
-            // Score update aur modern menu ko display karna
-            currentRunScore.innerText = score;
-            gameOverScreen.style.display = "flex";
+            gameOver = true; stopBackgroundMusic(); playCrashSound();      
+            currentRunScore.innerText = score; gameOverScreen.style.display = "flex";
         }
 
-        loop();
+        window.onload = function() {
+            startMenuAnimation();
+        };
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('data:application/javascript,self.addEventListener("fetch",e=>e.respondWith(fetch(e.request)));');
+            });
+        }
     </script>
 <script src="https://pl29596695.effectivecpmnetwork.com/dc/29/c7/dc29c7da7698883520f1deb51f97c84f.js"></script>
 
